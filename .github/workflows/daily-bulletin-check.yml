@@ -1,0 +1,58 @@
+name: Daily Visa Bulletin Check
+
+# Runs once a day, checks whether the Department of State has published the
+# next month's Visa Bulletin yet, and if so scrapes it, updates the SQLite
+# database, and commits the change straight to this repo. If this repo is
+# connected to Vercel (or similar), that commit will auto-trigger a redeploy
+# so the live dashboard picks up the new month automatically.
+#
+# Cron is UTC. 13:00 UTC below is ~8-9am US Eastern depending on daylight
+# saving; adjust the schedule line to whatever time you prefer.
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install scraper dependencies
+        run: pip install -r scraper/requirements.txt
+
+      - name: Check for a newly published bulletin
+        id: check
+        run: |
+          set -e
+          OUTPUT=$(python3 scraper/scraper.py --auto --db db/visa_bulletin_2013_2026.db)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "NEW_BULLETIN_ADDED"; then
+            echo "new_data=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "new_data=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sync the frontend's DB copy
+        if: steps.check.outputs.new_data == 'true'
+        run: cp -f db/visa_bulletin_2013_2026.db frontend/data/visa_bulletin.db
+
+      - name: Commit and push updated data
+        if: steps.check.outputs.new_data == 'true'
+        run: |
+          git config user.name "visa-bulletin-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add db/visa_bulletin_2013_2026.db frontend/data/visa_bulletin.db scraper/url_list.json
+          git commit -m "Auto-update: new visa bulletin data [skip ci]"
+          git push
