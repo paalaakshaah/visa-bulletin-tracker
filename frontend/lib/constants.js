@@ -51,3 +51,11 @@ export function formatPriorityDate(isoDate) {
   if (!y || !m || !d) return isoDate;
   return `${d}${MONTH_ABBR[Number(m) - 1]}${y.slice(2)}`;
 }
+
+// Every category code in this dataset starts with "F" (family-sponsored) or
+// "EB" (employment-based) -- see db/schema.sql / categories table.
+export function inferBroadCategory(categoryCode) {
+  return categoryCode && categoryCode.startsWith('EB') ? 'Employment-Based' : 'Family-Sponsored';
+}
+
+export const VISA_PROFILE_KEY = 'visaBulletinProfile';

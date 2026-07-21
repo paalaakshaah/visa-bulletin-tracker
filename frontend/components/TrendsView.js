@@ -2,20 +2,31 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import TrendChart from './TrendChart';
-import { AREA_LABELS, TABLE_TYPES, sortAreas } from '../lib/constants';
+import { AREA_LABELS, TABLE_TYPES, inferBroadCategory, sortAreas } from '../lib/constants';
 
-export default function TrendsView({ meta }) {
+export default function TrendsView({ meta, profile }) {
   const familyCategories = meta.categories.filter((c) => c.broad_category === 'Family-Sponsored');
   const employmentCategories = meta.categories.filter(
     (c) => c.broad_category === 'Employment-Based'
   );
 
-  const [broadFilter, setBroadFilter] = useState('Employment-Based');
+  const [broadFilter, setBroadFilter] = useState(
+    profile?.category ? inferBroadCategory(profile.category) : 'Employment-Based'
+  );
   const [category, setCategory] = useState(
-    employmentCategories.find((c) => c.code === 'EB2')?.code || employmentCategories[0]?.code || ''
+    profile?.category ||
+      employmentCategories.find((c) => c.code === 'EB2')?.code ||
+      employmentCategories[0]?.code ||
+      ''
   );
   const [tableType, setTableType] = useState('Final Action');
-  const [selectedAreas, setSelectedAreas] = useState(['ALL', 'CHINA', 'INDIA']);
+  const [selectedAreas, setSelectedAreas] = useState(() => {
+    const defaults = ['ALL', 'CHINA', 'INDIA'];
+    if (profile?.area && !defaults.includes(profile.area)) {
+      return [...defaults, profile.area];
+    }
+    return defaults;
+  });
   const [rawRows, setRawRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +60,17 @@ export default function TrendsView({ meta }) {
       });
   }, [category, selectedAreas, tableType]);
 
-  const { chartData, yDomain } = useMemo(() => {
+  const showYouAreHere = Boolean(
+    profile?.category &&
+      profile.category === category &&
+      profile.area &&
+      selectedAreas.includes(profile.area) &&
+      profile.priorityDate
+  );
+  const priorityTs = showYouAreHere ? Date.parse(profile.priorityDate + 'T00:00:00Z') : null;
+  const targetArea = showYouAreHere ? profile.area : null;
+
+  const { chartData, yDomain, youAreHere } = useMemo(() => {
     const byDate = new Map();
     let min = Infinity;
     let max = -Infinity;
@@ -71,12 +92,43 @@ export default function TrendsView({ meta }) {
 
     const data = [...byDate.values()].sort((a, b) => (a.bulletin_date < b.bulletin_date ? -1 : 1));
 
+    // The dot marks the user's own priority date (y = priorityTs exactly),
+    // placed at the month on their country's line where that cut-off first
+    // reaches/passes it, so it sits right on the line. If the cut-off
+    // hasn't reached it yet, there is no such point -- instead we mark the
+    // most recent month with a hollow dot plus a dashed connector down to
+    // where the line actually is, so the (possibly large) gap reads as
+    // "not current yet" rather than a stray, disconnected marker.
+    let dot = null;
+    if (priorityTs != null && targetArea) {
+      const reached = data.find((p) => {
+        const ts = p[`${targetArea}_ts`];
+        return ts != null && ts >= priorityTs;
+      });
+      if (reached) {
+        dot = { x: reached.bulletin_date, y: priorityTs, area: targetArea, reached: true };
+      } else {
+        for (let i = data.length - 1; i >= 0; i--) {
+          const ts = data[i][`${targetArea}_ts`];
+          if (ts != null) {
+            dot = { x: data[i].bulletin_date, y: priorityTs, area: targetArea, reached: false, lineY: ts };
+            break;
+          }
+        }
+      }
+    }
+
+    if (dot != null) {
+      if (dot.y < min) min = dot.y;
+      if (dot.y > max) max = dot.y;
+    }
+
     if (min === Infinity) {
-      return { chartData: data, yDomain: ['auto', 'auto'] };
+      return { chartData: data, yDomain: ['auto', 'auto'], youAreHere: dot };
     }
     const pad = Math.max((max - min) * 0.05, 1000 * 60 * 60 * 24 * 30);
-    return { chartData: data, yDomain: [min - pad, max + pad] };
-  }, [rawRows]);
+    return { chartData: data, yDomain: [min - pad, max + pad], youAreHere: dot };
+  }, [rawRows, priorityTs, targetArea]);
 
   function toggleArea(code) {
     setSelectedAreas((prev) =>
@@ -165,11 +217,19 @@ export default function TrendsView({ meta }) {
         </div>
       </div>
 
+      {profile?.category && !showYouAreHere && (
+        <p className="text-xs text-amber-600 mb-3">
+          {profile.category !== category
+            ? `Switch the Category above to ${profile.category} to see your priority date marked on the chart.`
+            : `Select ${AREA_LABELS[profile.area] || profile.area} under Countries above to see your priority date marked on the chart.`}
+        </p>
+      )}
+
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
         {loading ? (
           <div className="text-slate-400 text-sm py-12 text-center">Loading&hellip;</div>
         ) : (
-          <TrendChart data={chartData} areas={selectedAreas} yDomain={yDomain} />
+          <TrendChart data={chartData} areas={selectedAreas} yDomain={yDomain} youAreHere={youAreHere} />
         )}
         <p className="text-xs text-slate-400 mt-2">
           Drag the handles below the chart to zoom into a date range. Y-axis shows the published

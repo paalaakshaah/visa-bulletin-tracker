@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AREA_LABELS, TABLE_TYPES, formatMonthLabel, formatPriorityDate, sortAreas } from '../lib/constants';
+import {
+  AREA_LABELS,
+  TABLE_TYPES,
+  formatMonthLabel,
+  formatPriorityDate,
+  inferBroadCategory,
+  sortAreas,
+} from '../lib/constants';
 
 function Cell({ row }) {
   if (!row) {
@@ -32,10 +39,12 @@ function Cell({ row }) {
   );
 }
 
-export default function DashboardView({ meta }) {
+export default function DashboardView({ meta, profile }) {
   const [bulletinDate, setBulletinDate] = useState(meta.latest);
   const [tableType, setTableType] = useState('Final Action');
-  const [broadFilter, setBroadFilter] = useState('Employment-Based');
+  const [broadFilter, setBroadFilter] = useState(
+    profile?.category ? inferBroadCategory(profile.category) : 'Employment-Based'
+  );
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 

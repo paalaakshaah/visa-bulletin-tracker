@@ -5,6 +5,8 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -47,7 +49,7 @@ function CustomTooltip({ active, payload, label, areas }) {
   );
 }
 
-export default function TrendChart({ data, areas, yDomain }) {
+export default function TrendChart({ data, areas, yDomain, youAreHere }) {
   if (!data || data.length === 0) {
     return <div className="text-slate-400 text-sm py-12 text-center">No data to display.</div>;
   }
@@ -88,6 +90,42 @@ export default function TrendChart({ data, areas, yDomain }) {
               isAnimationActive={false}
             />
           ))}
+          {youAreHere && (() => {
+            const areaIndex = areas.indexOf(youAreHere.area);
+            const color = CHART_COLORS[(areaIndex < 0 ? 0 : areaIndex) % CHART_COLORS.length];
+            const label = youAreHere.reached ? 'You are here' : 'You are here (not yet current)';
+            return (
+              <>
+                {!youAreHere.reached && youAreHere.lineY != null && (
+                  <ReferenceLine
+                    segment={[
+                      { x: youAreHere.x, y: youAreHere.lineY },
+                      { x: youAreHere.x, y: youAreHere.y },
+                    ]}
+                    stroke={color}
+                    strokeDasharray="4 4"
+                    strokeWidth={1.5}
+                  />
+                )}
+                <ReferenceDot
+                  x={youAreHere.x}
+                  y={youAreHere.y}
+                  r={7}
+                  fill={youAreHere.reached ? color : '#fff'}
+                  stroke={color}
+                  strokeWidth={2}
+                  isFront
+                  label={{
+                    value: label,
+                    position: 'left',
+                    fill: color,
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                />
+              </>
+            );
+          })()}
           <Brush
             dataKey="bulletin_date"
             height={24}
