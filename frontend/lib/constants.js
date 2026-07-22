@@ -4,7 +4,7 @@ export const AREA_ORDER = [
 ];
 
 export const AREA_LABELS = {
-  ALL: 'All Countries',
+  ALL: 'All Other Countries',
   CHINA: 'China',
   INDIA: 'India',
   MEXICO: 'Mexico',
@@ -59,3 +59,13 @@ export function inferBroadCategory(categoryCode) {
 }
 
 export const VISA_PROFILE_KEY = 'visaBulletinProfile';
+
+// Compact, human-readable rendering of a day delta, e.g. 45 -> "45d",
+// 90 -> "3mo", 800 -> "2.2y". Sign is included.
+export function formatDeltaDays(days) {
+  const sign = days > 0 ? '+' : days < 0 ? '−' : '';
+  const abs = Math.abs(days);
+  if (abs >= 365) return `${sign}${(abs / 365).toFixed(1)}y`;
+  if (abs >= 30) return `${sign}${Math.round(abs / 30)}mo`;
+  return `${sign}${abs}d`;
+}

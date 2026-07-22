@@ -21,7 +21,7 @@ function formatTick(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
-function CustomTooltip({ active, payload, label, areas }) {
+function CustomTooltip({ active, payload, label, areas, seriesLabels }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div className="bg-white border border-slate-200 rounded-md shadow-md px-3 py-2 text-xs">
@@ -40,7 +40,7 @@ function CustomTooltip({ active, payload, label, areas }) {
               className="inline-block w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
             />
-            <span className="text-slate-500">{AREA_LABELS[area] || area}:</span>
+            <span className="text-slate-500">{seriesLabels[area] || area}:</span>
             <span className="font-medium text-slate-800">{display}</span>
           </div>
         );
@@ -49,7 +49,7 @@ function CustomTooltip({ active, payload, label, areas }) {
   );
 }
 
-export default function TrendChart({ data, areas, yDomain, youAreHere }) {
+export default function TrendChart({ data, areas, yDomain, youAreHere, seriesLabels = AREA_LABELS }) {
   if (!data || data.length === 0) {
     return <div className="text-slate-400 text-sm py-12 text-center">No data to display.</div>;
   }
@@ -72,9 +72,9 @@ export default function TrendChart({ data, areas, yDomain, youAreHere }) {
             tick={{ fontSize: 11, fill: '#64748b' }}
             width={80}
           />
-          <Tooltip content={<CustomTooltip areas={areas} />} />
+          <Tooltip content={<CustomTooltip areas={areas} seriesLabels={seriesLabels} />} />
           <Legend
-            formatter={(value) => AREA_LABELS[value] || value}
+            formatter={(value) => seriesLabels[value] || value}
             wrapperStyle={{ fontSize: 12 }}
           />
           {areas.map((area, i) => (
@@ -91,7 +91,7 @@ export default function TrendChart({ data, areas, yDomain, youAreHere }) {
             />
           ))}
           {youAreHere && (() => {
-            const areaIndex = areas.indexOf(youAreHere.area);
+            const areaIndex = areas.indexOf(youAreHere.seriesKey);
             const color = CHART_COLORS[(areaIndex < 0 ? 0 : areaIndex) % CHART_COLORS.length];
             const label = youAreHere.reached ? 'You are here' : 'You are here (not yet current)';
             return (

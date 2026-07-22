@@ -4,11 +4,44 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AREA_LABELS,
   TABLE_TYPES,
+  formatDeltaDays,
   formatMonthLabel,
   formatPriorityDate,
   inferBroadCategory,
   sortAreas,
 } from '../lib/constants';
+
+const MOVEMENT_LABELS = {
+  BECAME_CURRENT: { text: 'Became Current', tone: 'positive' },
+  LOST_CURRENT: { text: 'Retrogressed', tone: 'negative' },
+  BECAME_AVAILABLE: { text: 'Became Available', tone: 'positive' },
+  BECAME_UNAVAILABLE: { text: 'Became Unavailable', tone: 'negative' },
+  NO_CHANGE: { text: 'No change', tone: 'neutral' },
+};
+
+const TONE_CLASSES = {
+  positive: 'text-green-600',
+  negative: 'text-red-600',
+  neutral: 'text-slate-400',
+};
+
+function MovementBadge({ row }) {
+  if (!row || !row.movement || row.movement === 'NEW') return null;
+  if (row.movement === 'ADVANCED' || row.movement === 'RETROGRESSED') {
+    const tone = row.movement === 'ADVANCED' ? 'positive' : 'negative';
+    const arrow = row.movement === 'ADVANCED' ? '▲' : '▼';
+    return (
+      <div className={`text-[10px] font-semibold mt-0.5 ${TONE_CLASSES[tone]}`}>
+        {arrow} {formatDeltaDays(row.delta_days)}
+      </div>
+    );
+  }
+  const info = MOVEMENT_LABELS[row.movement];
+  if (!info) return null;
+  return (
+    <div className={`text-[10px] font-medium mt-0.5 ${TONE_CLASSES[info.tone]}`}>{info.text}</div>
+  );
+}
 
 function Cell({ row }) {
   if (!row) {
@@ -20,6 +53,7 @@ function Cell({ row }) {
         <span className="inline-block rounded-full bg-green-100 text-green-700 font-medium px-2 py-0.5">
           Current
         </span>
+        <MovementBadge row={row} />
       </td>
     );
   }
@@ -29,12 +63,14 @@ function Cell({ row }) {
         <span className="inline-block rounded-full bg-red-100 text-red-700 font-medium px-2 py-0.5">
           Unavailable
         </span>
+        <MovementBadge row={row} />
       </td>
     );
   }
   return (
-    <td className="px-3 py-2 text-center text-sm text-slate-700 font-mono">
-      {formatPriorityDate(row.priority_date)}
+    <td className="px-3 py-2 text-center text-sm text-slate-700">
+      <span className="font-mono">{formatPriorityDate(row.priority_date)}</span>
+      <MovementBadge row={row} />
     </td>
   );
 }
@@ -183,6 +219,17 @@ export default function DashboardView({ meta, profile }) {
           </div>
         </div>
       </div>
+
+      {!loading && data?.previous_bulletin_date && (
+        <p className="text-xs text-slate-400 mb-4">
+          Small labels under each date show movement since{' '}
+          {formatMonthLabel(data.previous_bulletin_date)}:{' '}
+          <span className="text-green-600 font-medium">green</span> means the date advanced (or
+          the category became current/available),{' '}
+          <span className="text-red-600 font-medium">red</span> means it retrogressed (or became
+          unavailable).
+        </p>
+      )}
 
       {loading && <div className="text-slate-400 text-sm">Loading&hellip;</div>}
 

@@ -55,26 +55,30 @@ export default function HomePage() {
         <p className="text-sm text-slate-500 mt-1">
           Family-sponsored &amp; employment-based preference dates
         </p>
-        {meta && !showOnboarding && (
-          <p className="text-xs text-slate-400 mt-1">
-            {hasCase ? (
-              <>
-                Your case: {profile.category}
-                {profile.area && profile.area !== 'ALL'
-                  ? `, born in ${AREA_LABELS[profile.area] || profile.area}`
-                  : ''}
-                , priority date {formatPriorityDate(profile.priorityDate)}
-                {' '}&middot;{' '}
-                <button onClick={() => setEditing(true)} className="underline hover:text-slate-600">
-                  Change my info
-                </button>
-              </>
-            ) : (
-              <button onClick={() => setEditing(true)} className="underline hover:text-slate-600">
-                Add your case details
-              </button>
-            )}
-          </p>
+        {meta && !showOnboarding && hasCase && (
+          <div className="flex flex-wrap items-center gap-3 mt-3">
+            <p className="text-sm font-semibold text-slate-700">
+              Your case: {profile.category}
+              {profile.area && profile.area !== 'ALL'
+                ? `, born in ${AREA_LABELS[profile.area] || profile.area}`
+                : ''}
+              , priority date {formatPriorityDate(profile.priorityDate)}
+            </p>
+            <button
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+            >
+              Change my info
+            </button>
+          </div>
+        )}
+        {meta && !showOnboarding && !hasCase && (
+          <button
+            onClick={() => setEditing(true)}
+            className="mt-3 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+          >
+            Add my case details
+          </button>
         )}
       </header>
 
