@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { track } from '@vercel/analytics';
+import posthog from 'posthog-js';
 import TrendChart from './TrendChart';
 import { AREA_LABELS, TABLE_TYPES, inferBroadCategory, sortAreas } from '../lib/constants';
 
@@ -154,6 +155,7 @@ export default function TrendsView({ meta, profile }) {
     setSelectedAreas((prev) => {
       const adding = !prev.includes(code);
       track('country_selected', { country: code, selected: adding });
+      posthog.capture('country_selected', { country: code, selected: adding });
       return adding ? [...prev, code] : prev.filter((a) => a !== code);
     });
   }
@@ -162,8 +164,14 @@ export default function TrendsView({ meta, profile }) {
     setSelectedCategories((prev) => {
       const adding = !prev.includes(code);
       track('category_selected', { category: code, selected: adding });
+      posthog.capture('category_selected', { category: code, selected: adding });
       return adding ? [...prev, code] : prev.filter((c) => c !== code);
     });
+  }
+
+  function handleChartTypeChange(tt) {
+    posthog.capture('chart_type_changed', { chart_type: tt });
+    setTableType(tt);
   }
 
   let youAreHereHint = null;
@@ -186,7 +194,7 @@ export default function TrendsView({ meta, profile }) {
             {TABLE_TYPES.map((tt) => (
               <button
                 key={tt}
-                onClick={() => setTableType(tt)}
+                onClick={() => handleChartTypeChange(tt)}
                 className={`px-3 py-1.5 text-sm font-medium ${
                   tableType === tt
                     ? 'bg-blue-600 text-white'
