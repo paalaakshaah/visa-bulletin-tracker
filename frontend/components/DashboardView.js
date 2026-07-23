@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import posthog from 'posthog-js';
 import {
   AREA_LABELS,
   TABLE_TYPES,
@@ -120,6 +121,16 @@ export default function DashboardView({ meta, profile }) {
     return { areas, families, employments };
   }, [data]);
 
+  function handleBulletinMonthChange(date) {
+    posthog.capture('bulletin_month_changed', { bulletin_date: date });
+    setBulletinDate(date);
+  }
+
+  function handleCategoryFilterChange(filter) {
+    posthog.capture('dashboard_category_filter_changed', { filter });
+    setBroadFilter(filter);
+  }
+
   const showFamily = broadFilter === 'All' || broadFilter === 'Family-Sponsored';
   const showEmployment = broadFilter === 'All' || broadFilter === 'Employment-Based';
 
@@ -170,7 +181,7 @@ export default function DashboardView({ meta, profile }) {
           <label className="block text-xs font-medium text-slate-500 mb-1">Bulletin Month</label>
           <select
             value={bulletinDate}
-            onChange={(e) => setBulletinDate(e.target.value)}
+            onChange={(e) => handleBulletinMonthChange(e.target.value)}
             className="rounded-md border-slate-300 text-sm py-1.5 pl-2 pr-8 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             {[...meta.months].reverse().map((m) => (
@@ -206,7 +217,7 @@ export default function DashboardView({ meta, profile }) {
             {['All', 'Family-Sponsored', 'Employment-Based'].map((f) => (
               <button
                 key={f}
-                onClick={() => setBroadFilter(f)}
+                onClick={() => handleCategoryFilterChange(f)}
                 className={`px-3 py-1.5 text-sm font-medium ${
                   broadFilter === f
                     ? 'bg-blue-600 text-white'
