@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { track } from '@vercel/analytics';
 import TrendChart from './TrendChart';
 import { AREA_LABELS, TABLE_TYPES, inferBroadCategory, sortAreas } from '../lib/constants';
 
@@ -150,15 +151,19 @@ export default function TrendsView({ meta, profile }) {
   }, [rawRows, priorityTs, targetSeriesKey]);
 
   function toggleArea(code) {
-    setSelectedAreas((prev) =>
-      prev.includes(code) ? prev.filter((a) => a !== code) : [...prev, code]
-    );
+    setSelectedAreas((prev) => {
+      const adding = !prev.includes(code);
+      track('country_selected', { country: code, selected: adding });
+      return adding ? [...prev, code] : prev.filter((a) => a !== code);
+    });
   }
 
   function toggleCategory(code) {
-    setSelectedCategories((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
+    setSelectedCategories((prev) => {
+      const adding = !prev.includes(code);
+      track('category_selected', { category: code, selected: adding });
+      return adding ? [...prev, code] : prev.filter((c) => c !== code);
+    });
   }
 
   let youAreHereHint = null;
