@@ -7,7 +7,7 @@ export default function UscisCaseStatusLink() {
         href="https://egov.uscis.gov/"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-900"
+        className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
       >
         Check My Case Status on USCIS
       </a>
